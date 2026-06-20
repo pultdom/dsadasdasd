@@ -1,0 +1,1911 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>ГРОЗИН: ПУТЬ К ЧЕМПИОНАТУ</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    user-select: none;
+  }
+  #game {
+    display: block;
+    margin: 0 auto;
+    background: #111;
+    image-rendering: pixelated;
+    cursor: crosshair;
+  }
+  #ui {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    font-size: 14px;
+    text-shadow: 2px 2px 0 #000;
+    pointer-events: none;
+    z-index: 10;
+  }
+  #dialog {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    background: rgba(0,0,0,0.85);
+    border: 2px solid #ffcc00;
+    padding: 20px;
+    font-size: 18px;
+    display: none;
+    z-index: 20;
+    box-shadow: 0 0 20px #ffcc00;
+  }
+  #dialog .speaker { color: #ffcc00; font-weight: bold; margin-bottom: 8px; }
+  #dialog .text { color: #fff; line-height: 1.5; }
+  #dialog .hint { color: #888; font-size: 12px; margin-top: 10px; }
+  #menu {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle, #222, #000);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  #menu h1 {
+    font-size: 64px;
+    color: #ffcc00;
+    text-shadow: 4px 4px 0 #000, 0 0 30px #ff6600;
+    margin-bottom: 10px;
+    letter-spacing: 4px;
+    animation: pulse 2s infinite;
+  }
+  #menu h2 {
+    font-size: 22px;
+    color: #aaa;
+    margin-bottom: 40px;
+  }
+  @keyframes pulse {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .btn {
+    background: #222;
+    color: #ffcc00;
+    border: 2px solid #ffcc00;
+    padding: 15px 40px;
+    margin: 8px;
+    font-size: 18px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 280px;
+  }
+  .btn:hover {
+    background: #ffcc00;
+    color: #000;
+    box-shadow: 0 0 20px #ffcc00;
+    transform: scale(1.05);
+  }
+  #chapter {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 90;
+  }
+  #chapter h1 {
+    font-size: 72px;
+    color: #ffcc00;
+    text-shadow: 0 0 30px #ff6600;
+    animation: fadeIn 2s;
+  }
+  #chapter h2 {
+    font-size: 32px;
+    color: #fff;
+    margin-top: 20px;
+    animation: fadeIn 3s;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  #scream {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    animation: shake 0.1s infinite;
+  }
+  @keyframes shake {
+    0% { transform: translate(0,0); }
+    25% { transform: translate(-10px, 5px); }
+    50% { transform: translate(10px, -5px); }
+    75% { transform: translate(-5px, -10px); }
+    100% { transform: translate(5px, 10px); }
+  }
+  #warning {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    color: #ff0000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    font-size: 28px;
+    text-align: center;
+    padding: 20px;
+  }
+  #warning h1 { color: #ff0000; font-size: 48px; margin-bottom: 20px; }
+  #warning p { margin: 10px 0; color: #fff; max-width: 600px; }
+  #hud {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    text-align: right;
+    font-size: 16px;
+    text-shadow: 2px 2px 0 #000;
+    z-index: 10;
+  }
+  .bar {
+    width: 200px;
+    height: 18px;
+    background: #333;
+    border: 2px solid #fff;
+    margin: 4px 0;
+    position: relative;
+  }
+  .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff0000, #ff6600);
+    transition: width 0.3s;
+  }
+  .bar-fill.hp { background: linear-gradient(90deg, #ff0000, #ff3333); }
+  .bar-fill.boss { background: linear-gradient(90deg, #8800ff, #ff00ff); width: 100%; }
+  #inventory {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    display: flex;
+    gap: 5px;
+    z-index: 10;
+  }
+  .slot {
+    width: 50px;
+    height: 50px;
+    background: rgba(0,0,0,0.7);
+    border: 2px solid #ffcc00;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+  }
+  #minimap {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    border: 2px solid #ffcc00;
+    padding: 5px;
+    font-size: 12px;
+    z-index: 10;
+  }
+  #secretInput {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid #444;
+    color: #fff;
+    padding: 5px;
+    font-family: inherit;
+    z-index: 10;
+    width: 150px;
+  }
+  .flash {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    z-index: 400;
+    pointer-events: none;
+    animation: flashAnim 0.3s;
+  }
+  @keyframes flashAnim {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="warning">
+  <h1>⚠ ПРЕДУПРЕЖДЕНИЕ ⚠</h1>
+  <p>Эта игра содержит <b style="color:#ff0000">СКРИМЕРЫ С ГРОМКИМ ЗВУКОМ</b>, сцены насилия и пугающие образы.</p>
+  <p>Игра посвящена Дмитрию и Алексею Грозиным — фанатам Ильи m0NESY.</p>
+  <p>Играй на свой страх и риск. Рекомендуется использовать наушники с тихой громкостью.</p>
+  <br>
+  <button class="btn" onclick="startGame()">Я ПРИНИМАЮ РИСК — НАЧАТЬ ИГРУ</button>
+</div>
+
+<div id="menu" style="display:none;">
+  <h1>ГРОЗИН</h1>
+  <h2>ПУТЬ К ЧЕМПИОНАТУ</h2>
+  <div style="color:#888; margin-bottom:20px;">Глава I: Пробуждение фаната</div>
+  <button class="btn" onclick="selectCharacter('dmitry')">👱 ИГРАТЬ ЗА ДМИТРИЯ</button>
+  <button class="btn" onclick="selectCharacter('alexey')">👱‍♂️ ИГРАТЬ ЗА АЛЕКСЕЯ</button>
+  <button class="btn" onclick="showControls()">🎮 УПРАВЛЕНИЕ</button>
+  <button class="btn" onclick="showLore()">📖 ЛОР ИГРЫ</button>
+  <div style="color:#444; margin-top:40px; font-size:12px;">v1.0 • Spirit > Falcons • 2026</div>
+</div>
+
+<div id="chapter">
+  <h1 id="chapterTitle"></h1>
+  <h2 id="chapterSubtitle"></h2>
+</div>
+
+<canvas id="game" width="1280" height="720"></canvas>
+
+<div id="ui" style="display:none;">
+  <div id="location"></div>
+</div>
+
+<div id="hud" style="display:none;">
+  <div>❤️ ЗДОРОВЬЕ</div>
+  <div class="bar"><div class="bar-fill hp" id="hpBar" style="width:100%"></div></div>
+  <div>🔫 ПАТРОНЫ: <span id="ammo">30</span></div>
+  <div>💀 УБИЙСТВ: <span id="kills">0</span></div>
+  <div>⭐ ОЧКИ: <span id="score">0</span></div>
+  <div id="bossHud" style="display:none;">
+    <div style="color:#ff00ff;">👹 BOSS: <span id="bossName"></span></div>
+    <div class="bar" style="width:400px;"><div class="bar-fill boss" id="bossBar"></div></div>
+  </div>
+</div>
+
+<div id="minimap" style="display:none;">
+  <span id="chapterIndicator">ГЛАВА I</span>
+</div>
+
+<div id="inventory" style="display:none;">
+  <div class="slot" id="slot0">🔫</div>
+  <div class="slot" id="slot1"></div>
+  <div class="slot" id="slot2"></div>
+  <div class="slot" id="slot3"></div>
+</div>
+
+<div id="dialog">
+  <div class="speaker" id="speaker"></div>
+  <div class="text" id="dialogText"></div>
+  <div class="hint">[ПРОБЕЛ] — продолжить</div>
+</div>
+
+<div id="scream"></div>
+
+<input id="secretInput" placeholder="секретный код..." style="display:none;">
+
+<script>
+// ============================================================
+// ГРОЗИН: ПУТЬ К ЧЕМПИОНАТУ
+// Полноценная сюжетная игра
+// ============================================================
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// ---------- AUDIO ENGINE ----------
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function playTone(freq, duration, type='sine', vol=0.3) {
+  ensureAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.value = vol;
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  osc.stop(audioCtx.currentTime + duration);
+}
+function playShoot() {
+  ensureAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
+  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+}
+function playHit() { playTone(200, 0.15, 'sawtooth', 0.2); }
+function playPickup() { playTone(880, 0.1, 'sine', 0.2); setTimeout(()=>playTone(1320,0.15,'sine',0.2),80); }
+function playDeath() {
+  ensureAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 1);
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 1);
+}
+function playScreamSound() {
+  ensureAudio();
+  // Резкий шум + низкочастотный гул
+  const bufferSize = audioCtx.sampleRate * 2;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * (1 - i/bufferSize);
+  }
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buffer;
+  const noiseGain = audioCtx.createGain();
+  noiseGain.gain.value = 0.6;
+  noise.connect(noiseGain); noiseGain.connect(audioCtx.destination);
+  noise.start();
+  // Низкий гул
+  const osc = audioCtx.createOscillator();
+  const oscGain = audioCtx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.value = 60;
+  oscGain.gain.value = 0.4;
+  osc.connect(oscGain); oscGain.connect(audioCtx.destination);
+  osc.start();
+  osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 2);
+  oscGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2);
+  osc.stop(audioCtx.currentTime + 2);
+  // Визг
+  const sc = audioCtx.createOscillator();
+  const scG = audioCtx.createGain();
+  sc.type = 'square';
+  sc.frequency.value = 1200;
+  scG.gain.value = 0.3;
+  sc.connect(scG); scG.connect(audioCtx.destination);
+  sc.start();
+  sc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 1.5);
+  scG.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+  sc.stop(audioCtx.currentTime + 1.5);
+}
+function playBossMusic() {
+  ensureAudio();
+  const notes = [110, 130.81, 146.83, 110, 164.81, 146.83, 130.81, 110];
+  let t = audioCtx.currentTime;
+  notes.forEach((f, i) => {
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.value = f;
+    g.gain.setValueAtTime(0.15, t + i*0.3);
+    g.gain.exponentialRampToValueAtTime(0.001, t + i*0.3 + 0.3);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(t + i*0.3); osc.stop(t + i*0.3 + 0.3);
+  });
+}
+function playMenuMusic() {
+  ensureAudio();
+  const melody = [261.63, 329.63, 392, 523.25, 392, 329.63];
+  let t = audioCtx.currentTime;
+  melody.forEach((f, i) => {
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = f;
+    g.gain.setValueAtTime(0.08, t + i*0.4);
+    g.gain.exponentialRampToValueAtTime(0.001, t + i*0.4 + 0.4);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(t + i*0.4); osc.stop(t + i*0.4 + 0.4);
+  });
+}
+
+// ---------- GAME STATE ----------
+const state = {
+  character: 'dmitry',
+  chapter: 1,
+  scene: 'intro',
+  hp: 100,
+  maxHp: 100,
+  ammo: 30,
+  kills: 0,
+  score: 0,
+  inventory: ['gun'],
+  keys: {},
+  mouse: { x: 0, y: 0, down: false },
+  camera: { x: 0, y: 0 },
+  entities: [],
+  bullets: [],
+  particles: [],
+  items: [],
+  doors: [],
+  npcs: [],
+  boss: null,
+  dialogQueue: [],
+  currentDialog: null,
+  paused: false,
+  gameOver: false,
+  screamCooldown: 0,
+  spiritPoints: 0,
+  secretsFound: 0,
+  time: 0,
+  lastShot: 0,
+  flash: 0,
+  shake: 0,
+  fade: 0,
+  fadeColor: '#000',
+  bossActive: false,
+  levelComplete: false,
+  easterEggSpirit: false,
+};
+
+// ---------- PLAYER ----------
+const player = {
+  x: 200, y: 400,
+  w: 40, h: 70,
+  vx: 0, vy: 0,
+  speed: 4,
+  facing: 1,
+  shooting: false,
+  anim: 0,
+  invuln: 0,
+};
+
+// ---------- INPUT ----------
+window.addEventListener('keydown', e => {
+  state.keys[e.key.toLowerCase()] = true;
+  if (e.key === ' ') {
+    if (state.currentDialog) advanceDialog();
+    else if (state.levelComplete) nextChapter();
+  }
+  if (e.key === 'r' || e.key === 'к') reload();
+  if (e.key === 'e' || e.key === 'у') interact();
+  if (e.key === 'Escape') togglePause();
+});
+window.addEventListener('keyup', e => { state.keys[e.key.toLowerCase()] = false; });
+canvas.addEventListener('mousemove', e => {
+  const r = canvas.getBoundingClientRect();
+  state.mouse.x = (e.clientX - r.left) * (W / r.width);
+  state.mouse.y = (e.clientY - r.top) * (H / r.height);
+});
+canvas.addEventListener('mousedown', e => { state.mouse.down = true; shoot(); });
+canvas.addEventListener('mouseup', e => { state.mouse.down = false; });
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+// ---------- SECRET INPUT ----------
+const secretInput = document.getElementById('secretInput');
+secretInput.addEventListener('input', () => {
+  const v = secretInput.value.toLowerCase();
+  if (v === 'spirit' || v === 'спирит') {
+    state.easterEggSpirit = true;
+    state.secretsFound++;
+    state.score += 500;
+    flash('#ffcc00');
+    showDialog('СИСТЕМА', '🏆 СЕКРЕТНАЯ ПАСХАЛКА! Team Spirit — лучшая команда в мире! +500 очков. Falcons — даже не рядом.', 3000);
+    secretInput.value = '';
+  } else if (v === 'm0nesy' || v === 'монеси') {
+    state.secretsFound++;
+    state.score += 300;
+    flash('#00ffff');
+    showDialog('m0NESY', '🎯 Ты нашёл меня, фанат! ДержиAWP — он никогда не промахивается. Spirit > Falcons навсегда!', 3000);
+    state.inventory.push('awp');
+    document.getElementById('slot1').textContent = '🎯';
+    secretInput.value = '';
+  } else if (v === 'donk') {
+    flash('#ff0000');
+    triggerScream('DONK_SEES_YOU');
+    secretInput.value = '';
+  } else if (v === 'falcons') {
+    flash('#880000');
+    showDialog('СИСТЕМА', '❌ Falcons — это слабость. -100 очков. Попробуй ввести что-то получше...', 2500);
+    state.score = Math.max(0, state.score - 100);
+    secretInput.value = '';
+  }
+});
+
+// ---------- UI HELPERS ----------
+function updateHUD() {
+  document.getElementById('hpBar').style.width = (state.hp/state.maxHp*100) + '%';
+  document.getElementById('ammo').textContent = state.ammo;
+  document.getElementById('kills').textContent = state.kills;
+  document.getElementById('score').textContent = state.score;
+}
+function flash(color='#fff') {
+  state.flash = 1;
+  state.flashColor = color;
+}
+function shake(amount=10) { state.shake = amount; }
+function showDialog(speaker, text, duration=0) {
+  state.currentDialog = { speaker, text, duration, start: Date.now() };
+  document.getElementById('dialog').style.display = 'block';
+  document.getElementById('speaker').textContent = speaker;
+  document.getElementById('dialogText').textContent = text;
+  if (duration > 0) setTimeout(() => { if (state.currentDialog && state.currentDialog.text === text) closeDialog(); }, duration);
+}
+function closeDialog() {
+  state.currentDialog = null;
+  document.getElementById('dialog').style.display = 'none';
+}
+function advanceDialog() {
+  if (state.dialogQueue.length > 0) {
+    const d = state.dialogQueue.shift();
+    showDialog(d.speaker, d.text);
+  } else {
+    closeDialog();
+  }
+}
+function queueDialog(speaker, text) {
+  state.dialogQueue.push({ speaker, text });
+  if (!state.currentDialog) advanceDialog();
+}
+
+// ---------- SCREAM SYSTEM ----------
+function triggerScream(type='default') {
+  if (state.screamCooldown > 0) return;
+  state.screamCooldown = 300;
+  playScreamSound();
+  const screamEl = document.getElementById('scream');
+  screamEl.style.display = 'flex';
+  screamEl.innerHTML = '';
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  screamEl.appendChild(c);
+  const sctx = c.getContext('2d');
+  // Рисуем жуткое лицо
+  drawScreamFace(sctx, type);
+  flash('#ff0000');
+  shake(30);
+  state.hp = Math.max(1, state.hp - 15);
+  setTimeout(() => {
+    screamEl.style.display = 'none';
+  }, 1500);
+}
+function drawScreamFace(ctx, type) {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+  if (type === 'DONK_SEES_YOU') {
+    // Лицо donk
+    ctx.fillStyle = '#222';
+    ctx.beginPath();
+    ctx.ellipse(W/2, H/2, 280, 340, 0, 0, Math.PI*2);
+    ctx.fill();
+    // Глаза — красные
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath(); ctx.arc(W/2-90, H/2-40, 50, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(W/2+90, H/2-40, 50, 0, Math.PI*2); ctx.fill();
+    // Зрачки
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(W/2-90, H/2-40, 20, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(W/2+90, H/2-40, 20, 0, Math.PI*2); ctx.fill();
+    // Рот — оскал
+    ctx.fillStyle = '#000';
+    ctx.fillRect(W/2-150, H/2+80, 300, 80);
+    ctx.fillStyle = '#fff';
+    for (let i = 0; i < 10; i++) {
+      ctx.beginPath();
+      ctx.moveTo(W/2-140+i*30, H/2+80);
+      ctx.lineTo(W/2-125+i*30, H/2+130);
+      ctx.lineTo(W/2-110+i*30, H/2+80);
+      ctx.fill();
+    }
+    // Текст
+    ctx.fillStyle = '#ff0000';
+    ctx.font = 'bold 80px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText('DONK SEES YOU', W/2, 100);
+    ctx.font = 'bold 40px Courier New';
+    ctx.fillText('ТЫ НЕ УЙДЁШЬ', W/2, H-80);
+  } else if (type === 'FALCON') {
+    // Сокол — символ Falcons
+    ctx.fillStyle = '#3a2510';
+    ctx.beginPath();
+    ctx.ellipse(W/2, H/2, 300, 200, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#ffaa00';
+    ctx.beginPath();
+    ctx.moveTo(W/2-100, H/2-50);
+    ctx.lineTo(W/2+100, H/2-50);
+    ctx.lineTo(W/2, H/2+50);
+    ctx.fill();
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath(); ctx.arc(W/2-60, H/2-80, 25, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(W/2+60, H/2-80, 25, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ff0000';
+    ctx.font = 'bold 70px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText('FALCONS?', W/2, 100);
+    ctx.font = 'bold 50px Courier New';
+    ctx.fillStyle = '#00ff00';
+    ctx.fillText('SPIRIT > FALCONS', W/2, H-80);
+  } else {
+    // Стандартный скример — бледное лицо
+    ctx.fillStyle = '#ddd';
+    ctx.beginPath();
+    ctx.ellipse(W/2, H/2, 250, 320, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(W/2-80, H/2-50, 40, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(W/2+80, H/2-50, 40, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath(); ctx.arc(W/2-80, H/2-50, 15, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(W/2+80, H/2-50, 15, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(W/2, H/2+100, 80, 120, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#ff0000';
+    ctx.font = 'bold 100px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText('БЕГИ', W/2, 120);
+  }
+}
+
+// ---------- CHARACTER DRAWING ----------
+function drawBlondCharacter(ctx, x, y, facing, anim, isPlayer=true, name='dmitry') {
+  // Блондин — Дмитрий или Алексей
+  const hairColor = name === 'dmitry' ? '#f4d03f' : '#f7dc6f';
+  const shirtColor = name === 'dmitry' ? '#2e86de' : '#10ac84';
+  const skinColor = '#f5cba7';
+  ctx.save();
+  ctx.translate(x, y);
+  if (facing < 0) { ctx.scale(-1, 1); }
+  // Тень
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(0, 35, 20, 5, 0, 0, Math.PI*2);
+  ctx.fill();
+  // Ноги
+  const legOffset = Math.sin(anim*0.3) * 5;
+  ctx.fillStyle = '#2c3e50';
+  ctx.fillRect(-12, 10, 10, 25 + legOffset);
+  ctx.fillRect(2, 10, 10, 25 - legOffset);
+  // Ботинки
+  ctx.fillStyle = '#000';
+  ctx.fillRect(-14, 33+legOffset, 14, 5);
+  ctx.fillRect(0, 33-legOffset, 14, 5);
+  // Тело (футболка)
+  ctx.fillStyle = shirtColor;
+  ctx.fillRect(-15, -20, 30, 35);
+  // Логотип Spirit на футболке
+  if (isPlayer) {
+    ctx.fillStyle = '#ffcc00';
+    ctx.font = 'bold 8px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('SPIRIT', 0, -5);
+  }
+  // Руки
+  ctx.fillStyle = shirtColor;
+  ctx.fillRect(-22, -18, 8, 25);
+  ctx.fillRect(14, -18, 8, 25);
+  // Кисти
+  ctx.fillStyle = skinColor;
+  ctx.fillRect(-22, 5, 8, 8);
+  ctx.fillRect(14, 5, 8, 8);
+  // Голова
+  ctx.fillStyle = skinColor;
+  ctx.beginPath();
+  ctx.arc(0, -32, 15, 0, Math.PI*2);
+  ctx.fill();
+  // Волосы блондина
+  ctx.fillStyle = hairColor;
+  ctx.beginPath();
+  ctx.arc(0, -36, 16, Math.PI, 0);
+  ctx.fill();
+  ctx.fillRect(-16, -40, 32, 8);
+  // Челка
+  ctx.beginPath();
+  ctx.moveTo(-14, -35);
+  ctx.lineTo(-8, -28);
+  ctx.lineTo(-2, -35);
+  ctx.lineTo(4, -28);
+  ctx.lineTo(10, -35);
+  ctx.lineTo(14, -28);
+  ctx.lineTo(16, -38);
+  ctx.lineTo(-16, -38);
+  ctx.fill();
+  // Глаза
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(-8, -33, 5, 4);
+  ctx.fillRect(3, -33, 5, 4);
+  ctx.fillStyle = '#2980b9';
+  ctx.fillRect(-6, -32, 2, 3);
+  ctx.fillRect(5, -32, 2, 3);
+  // Рот
+  ctx.fillStyle = '#c0392b';
+  ctx.fillRect(-3, -24, 6, 2);
+  // Оружие в руке
+  if (isPlayer) {
+    ctx.fillStyle = '#333';
+    ctx.fillRect(14, -5, 25, 6);
+    ctx.fillRect(35, -8, 8, 12);
+    ctx.fillStyle = '#555';
+    ctx.fillRect(16, -3, 20, 2);
+  }
+  ctx.restore();
+}
+
+function drawEnemy(ctx, enemy) {
+  ctx.save();
+  ctx.translate(enemy.x, enemy.y);
+  // Тень
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(0, 35, 20, 5, 0, 0, Math.PI*2);
+  ctx.fill();
+  // Враг — фанат Falcons
+  const legOffset = Math.sin(enemy.anim*0.3) * 5;
+  ctx.fillStyle = '#3a2510';
+  ctx.fillRect(-12, 10, 10, 25 + legOffset);
+  ctx.fillRect(2, 10, 10, 25 - legOffset);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(-14, 33+legOffset, 14, 5);
+  ctx.fillRect(0, 33-legOffset, 14, 5);
+  // Тело — оранжевое (цвета Falcons)
+  ctx.fillStyle = '#d35400';
+  ctx.fillRect(-15, -20, 30, 35);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 7px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('FALCONS', 0, -5);
+  // Руки
+  ctx.fillStyle = '#d35400';
+  ctx.fillRect(-22, -18, 8, 25);
+  ctx.fillRect(14, -18, 8, 25);
+  ctx.fillStyle = '#f5cba7';
+  ctx.fillRect(-22, 5, 8, 8);
+  ctx.fillRect(14, 5, 8, 8);
+  // Голова
+  ctx.fillStyle = '#f5cba7';
+  ctx.beginPath();
+  ctx.arc(0, -32, 15, 0, Math.PI*2);
+  ctx.fill();
+  // Тёмные волосы
+  ctx.fillStyle = '#2c1810';
+  ctx.beginPath();
+  ctx.arc(0, -36, 16, Math.PI, 0);
+  ctx.fill();
+  // Злые глаза
+  ctx.fillStyle = '#ff0000';
+  ctx.fillRect(-8, -33, 5, 3);
+  ctx.fillRect(3, -33, 5, 3);
+  // Рот
+  ctx.fillStyle = '#000';
+  ctx.fillRect(-4, -24, 8, 2);
+  // Оружие
+  if (enemy.type !== 'melee') {
+    ctx.fillStyle = '#333';
+    ctx.fillRect(-30, -5, 25, 6);
+  } else {
+    ctx.fillStyle = '#888';
+    ctx.fillRect(-25, -10, 20, 4);
+  }
+  // Полоска HP
+  const hpPct = enemy.hp / enemy.maxHp;
+  ctx.fillStyle = '#333';
+  ctx.fillRect(-20, -55, 40, 5);
+  ctx.fillStyle = hpPct > 0.5 ? '#00ff00' : hpPct > 0.25 ? '#ffaa00' : '#ff0000';
+  ctx.fillRect(-20, -55, 40*hpPct, 5);
+  ctx.restore();
+}
+
+function drawBoss(ctx, boss) {
+  ctx.save();
+  ctx.translate(boss.x, boss.y);
+  // DONK — огромный босс
+  const scale = 2.2;
+  ctx.scale(scale, scale);
+  // Тень
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.beginPath();
+  ctx.ellipse(0, 40, 30, 8, 0, 0, Math.PI*2);
+  ctx.fill();
+  // Ноги
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(-15, 10, 12, 30);
+  ctx.fillRect(3, 10, 12, 30);
+  // Тело — красное (агрессия)
+  ctx.fillStyle = '#c0392b';
+  ctx.fillRect(-20, -25, 40, 40);
+  // Надпись DONK
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 10px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('DONK', 0, -5);
+  // Руки — огромные
+  ctx.fillStyle = '#c0392b';
+  ctx.fillRect(-32, -20, 12, 35);
+  ctx.fillRect(20, -20, 12, 35);
+  // Кулаки
+  ctx.fillStyle = '#f5cba7';
+  ctx.beginPath(); ctx.arc(-26, 18, 8, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(26, 18, 8, 0, Math.PI*2); ctx.fill();
+  // Голова
+  ctx.fillStyle = '#f5cba7';
+  ctx.beginPath();
+  ctx.arc(0, -40, 18, 0, Math.PI*2);
+  ctx.fill();
+  // Короткая стрижка
+  ctx.fillStyle = '#3a2510';
+  ctx.beginPath();
+  ctx.arc(0, -44, 19, Math.PI, 0);
+  ctx.fill();
+  // Злые глаза — светятся
+  ctx.fillStyle = '#ff0000';
+  ctx.shadowColor = '#ff0000';
+  ctx.shadowBlur = 15;
+  ctx.beginPath(); ctx.arc(-7, -42, 4, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(7, -42, 4, 0, Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+  // Оскал
+  ctx.fillStyle = '#000';
+  ctx.fillRect(-10, -32, 20, 6);
+  ctx.fillStyle = '#fff';
+  for (let i = 0; i < 5; i++) {
+    ctx.fillRect(-9+i*4, -32, 2, 4);
+  }
+  // Аура
+  ctx.strokeStyle = 'rgba(255,0,0,' + (0.3 + Math.sin(state.time*0.1)*0.2) + ')';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.arc(0, -10, 50 + Math.sin(state.time*0.05)*5, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawNPC(ctx, npc) {
+  ctx.save();
+  ctx.translate(npc.x, npc.y);
+  if (npc.id === 'monesy') {
+    // m0NESY — легенда, с AWP
+    // Тень
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(0, 35, 20, 5, 0, 0, Math.PI*2); ctx.fill();
+    // Ноги
+    ctx.fillStyle = '#2c3e50';
+    ctx.fillRect(-12, 10, 10, 25);
+    ctx.fillRect(2, 10, 10, 25);
+    // Тело — жёлтое (цвета Navi/G2 vibes)
+    ctx.fillStyle = '#f1c40f';
+    ctx.fillRect(-15, -20, 30, 35);
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 7px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('m0NESY', 0, -5);
+    // Руки
+    ctx.fillStyle = '#f1c40f';
+    ctx.fillRect(-22, -18, 8, 25);
+    ctx.fillRect(14, -18, 8, 25);
+    ctx.fillStyle = '#f5cba7';
+    ctx.fillRect(-22, 5, 8, 8);
+    ctx.fillRect(14, 5, 8, 8);
+    // Голова
+    ctx.fillStyle = '#f5cba7';
+    ctx.beginPath(); ctx.arc(0, -32, 15, 0, Math.PI*2); ctx.fill();
+    // Русые волосы
+    ctx.fillStyle = '#b8860b';
+    ctx.beginPath(); ctx.arc(0, -36, 16, Math.PI, 0); ctx.fill();
+    ctx.fillRect(-16, -40, 32, 6);
+    // Глаза — сосредоточенные
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-8, -33, 5, 4);
+    ctx.fillRect(3, -33, 5, 4);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(-6, -32, 2, 3);
+    ctx.fillRect(5, -32, 2, 3);
+    // AWP
+    ctx.fillStyle = '#2c3e50';
+    ctx.fillRect(14, -15, 45, 5);
+    ctx.fillStyle = '#34495e';
+    ctx.fillRect(50, -18, 10, 11);
+    ctx.fillStyle = '#16a085';
+    ctx.fillRect(18, -13, 30, 2);
+    // Свечение вокруг m0NESY
+    ctx.strokeStyle = 'rgba(241,196,15,' + (0.4 + Math.sin(state.time*0.05)*0.3) + ')';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, -10, 40, 0, Math.PI*2);
+    ctx.stroke();
+  } else if (npc.id === 'brother') {
+    // Второй брат — помогает
+    const name = state.character === 'dmitry' ? 'alexey' : 'dmitry';
+    drawBlondCharacter(ctx, 0, 0, 1, state.time, false, name);
+    ctx.fillStyle = '#ffcc00';
+    ctx.font = 'bold 10px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(name === 'dmitry' ? 'ДИМА' : 'АЛЁША', 0, -60);
+  }
+  ctx.restore();
+}
+
+// ---------- LEVELS ----------
+const levels = {
+  1: {
+    name: 'Квартира Грозиных',
+    subtitle: 'Обычное утро. Или нет?',
+    bgColor: '#2c3e50',
+    floorColor: '#8b6f47',
+    wallColor: '#ecf0f1',
+    width: 2000,
+    height: 720,
+    enemies: [],
+    items: [
+      { x: 400, y: 500, type: 'ammo', icon: '📦' },
+      { x: 800, y: 400, type: 'health', icon: '❤️' },
+      { x: 1200, y: 500, type: 'spirit', icon: '⭐' },
+    ],
+    npcs: [
+      { x: 600, y: 450, id: 'brother', dialog: [
+        { speaker: state.character === 'dmitry' ? 'АЛЁША' : 'ДИМА', text: 'Брат, ты видел новости? m0NESY снова тащит на турнире!' },
+        { speaker: state.character === 'dmitry' ? 'ДМИТРИЙ' : 'АЛЕКСЕЙ', text: 'Конечно! Он лучший снайпер в мире. Spirit — наша семья.' },
+        { speaker: state.character === 'dmitry' ? 'АЛЁША' : 'ДИМА', text: 'Но... что-то странное происходит. Falcons собирают армию фанатов.' },
+        { speaker: state.character === 'dmitry' ? 'ДМИТРИЙ' : 'АЛЕКСЕЙ', text: 'Какую армию?' },
+        { speaker: state.character === 'dmitry' ? 'АЛЁША' : 'ДИМА', text: 'Они хотят уничтожить Team Spirit. И похитили m0NESY!' },
+        { speaker: state.character === 'dmitry' ? 'ДМИТРИЙ' : 'АЛЕКСЕЙ', text: 'ЧТО?! Мы должны его спасти. Берём оружие — и в путь!' },
+      ]},
+    ],
+    doors: [
+      { x: 1850, y: 400, w: 50, h: 150, to: 2, spawnX: 100, spawnY: 400 }
+    ],
+    screams: [
+      { x: 1000, y: 400, type: 'default', triggered: false }
+    ],
+    exitMsg: '🚪 Выход на улицу'
+  },
+  2: {
+    name: 'Улицы Москвы',
+    subtitle: 'Враг повсюду',
+    bgColor: '#34495e',
+    floorColor: '#555',
+    wallColor: '#7f8c8d',
+    width: 3000,
+    height: 720,
+    enemies: [
+      { x: 600, y: 450, type: 'shooter', hp: 50, maxHp: 50 },
+      { x: 1000, y: 500, type: 'shooter', hp: 50, maxHp: 50 },
+      { x: 1400, y: 400, type: 'melee', hp: 70, maxHp: 70 },
+      { x: 1800, y: 450, type: 'shooter', hp: 50, maxHp: 50 },
+      { x: 2200, y: 500, type: 'melee', hp: 70, maxHp: 70 },
+      { x: 2600, y: 400, type: 'shooter', hp: 80, maxHp: 80 },
+    ],
+    items: [
+      { x: 300, y: 500, type: 'ammo', icon: '📦' },
+      { x: 900, y: 400, type: 'health', icon: '❤️' },
+      { x: 1500, y: 500, type: 'ammo', icon: '📦' },
+      { x: 2000, y: 400, type: 'health', icon: '❤️' },
+      { x: 2500, y: 500, type: 'spirit', icon: '⭐' },
+    ],
+    npcs: [],
+    doors: [
+      { x: 2900, y: 400, w: 50, h: 150, to: 3, spawnX: 100, spawnY: 400 }
+    ],
+    screams: [
+      { x: 1200, y: 400, type: 'FALCON', triggered: false }
+    ],
+    exitMsg: '🏟️ Вход на арену Falcons'
+  },
+  3: {
+    name: 'Арена Falcons',
+    subtitle: 'Логово врага',
+    bgColor: '#1a0f08',
+    floorColor: '#4a2c17',
+    wallColor: '#d35400',
+    width: 2500,
+    height: 720,
+    enemies: [
+      { x: 500, y: 450, type: 'shooter', hp: 80, maxHp: 80 },
+      { x: 800, y: 500, type: 'melee', hp: 100, maxHp: 100 },
+      { x: 1100, y: 400, type: 'shooter', hp: 80, maxHp: 80 },
+      { x: 1400, y: 500, type: 'melee', hp: 100, maxHp: 100 },
+      { x: 1700, y: 450, type: 'shooter', hp: 100, maxHp: 100 },
+      { x: 2000, y: 400, type: 'elite', hp: 150, maxHp: 150 },
+    ],
+    items: [
+      { x: 400, y: 500, type: 'ammo', icon: '📦' },
+      { x: 900, y: 400, type: 'health', icon: '❤️' },
+      { x: 1300, y: 500, type: 'ammo', icon: '📦' },
+      { x: 1800, y: 400, type: 'health', icon: '❤️' },
+    ],
+    npcs: [
+      { x: 1500, y: 450, id: 'monesy', dialog: [
+        { speaker: 'm0NESY', text: 'Ребята! Вы пришли! Falcons держат меня здесь...' },
+        { speaker: state.character === 'dmitry' ? 'ДМИТРИЙ' : 'АЛЕКСЕЙ', text: 'm0NESY! Мы фанаты! Мы идём тебя спасти!' },
+        { speaker: 'm0NESY', text: 'Спасибо... Но берегитесь — их лидер DONK очень силён. Он где-то в логове.' },
+        { speaker: 'm0NESY', text: 'Вот, возьми мою запасную AWP. Она тебе пригодится.' },
+        { speaker: state.character === 'dmitry' ? 'ДМИТРИЙ' : 'АЛЕКСЕЙ', text: 'Спасибо! Мы не подведём. Spirit навсегда!' },
+        { speaker: 'm0NESY', text: 'Spirit > Falcons. Всегда. Иди — останови DONK!' },
+      ]},
+    ],
+    doors: [
+      { x: 2400, y: 400, w: 50, h: 150, to: 4, spawnX: 100, spawnY: 400 }
+    ],
+    screams: [
+      { x: 1000, y: 400, type: 'default', triggered: false },
+      { x: 1900, y: 400, type: 'FALCON', triggered: false }
+    ],
+    exitMsg: '🚪 В логово DONK'
+  },
+  4: {
+    name: 'Логово DONK',
+    subtitle: 'ФИНАЛЬНАЯ БИТВА',
+    bgColor: '#0a0000',
+    floorColor: '#3a0000',
+    wallColor: '#8b0000',
+    width: 1500,
+    height: 720,
+    enemies: [],
+    items: [
+      { x: 300, y: 500, type: 'ammo', icon: '📦' },
+      { x: 500, y: 400, type: 'health', icon: '❤️' },
+      { x: 700, y: 500, type: 'ammo', icon: '📦' },
+    ],
+    npcs: [],
+    doors: [],
+    screams: [],
+    boss: {
+      x: 1100, y: 400,
+      hp: 500, maxHp: 500,
+      type: 'donk',
+      phase: 1,
+      attackTimer: 0,
+      chargeTimer: 0,
+      charging: false,
+      chargeVx: 0,
+    },
+    exitMsg: null
+  }
+};
+
+// ---------- GAME FLOW ----------
+function startGame() {
+  ensureAudio();
+  document.getElementById('warning').style.display = 'none';
+  document.getElementById('menu').style.display = 'flex';
+  playMenuMusic();
+}
+function showControls() {
+  showDialog('УПРАВЛЕНИЕ', 'WASD / Стрелки — движение. МЫШЬ — прицел. ЛКМ — стрельба. R — перезарядка. E — взаимодействие. ПРОБЕЛ — продолжить диалог. ESC — пауза. Попробуй ввести секретные коды в поле справа внизу: spirit, m0nesy, donk, falcons.', 10000);
+}
+function showLore() {
+  showDialog('ЛОР', 'Дмитрий и Алексей Грозины — два брата, заядлые фанаты киберспорта. Их кумир — Илья m0NESY, легендарный снайпер. Когда зловещий DONK и армия фанатов Falcons похищают m0NESY, братья берутся за оружие, чтобы спасти идола и доказать: Team Spirit — лучшая команда в мире!', 10000);
+}
+function selectCharacter(c) {
+  state.character = c;
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('ui').style.display = 'block';
+  document.getElementById('hud').style.display = 'block';
+  document.getElementById('minimap').style.display = 'block';
+  document.getElementById('inventory').style.display = 'flex';
+  document.getElementById('secretInput').style.display = 'block';
+  showChapter(1);
+}
+function showChapter(n) {
+  state.chapter = n;
+  const lvl = levels[n];
+  document.getElementById('chapter').style.display = 'flex';
+  document.getElementById('chapterTitle').textContent = 'ГЛАВА ' + ['I','II','III','IV'][n-1];
+  document.getElementById('chapterSubtitle').textContent = lvl.name;
+  document.getElementById('chapterIndicator').textContent = 'ГЛАВА ' + ['I','II','III','IV'][n-1] + ' — ' + lvl.name;
+  playBossMusic();
+  setTimeout(() => {
+    document.getElementById('chapter').style.display = 'none';
+    loadLevel(n);
+  }, 3000);
+}
+function loadLevel(n) {
+  const lvl = levels[n];
+  state.scene = 'gameplay';
+  state.entities = [];
+  state.bullets = [];
+  state.particles = [];
+  state.items = lvl.items.map(i => ({...i, collected: false}));
+  state.doors = lvl.doors.map(d => ({...d}));
+  state.npcs = lvl.npcs.map(npc => ({...npc, talked: false, dialogIndex: 0}));
+  state.boss = lvl.boss ? {...lvl.boss} : null;
+  state.bossActive = !!lvl.boss;
+  state.levelComplete = false;
+  // Скример-триггеры
+  state.screams = lvl.screams ? lvl.screams.map(s => ({...s})) : [];
+  // Спавн врагов
+  lvl.enemies.forEach(e => {
+    state.entities.push({
+      x: e.x, y: e.y,
+      w: 40, h: 70,
+      vx: 0, vy: 0,
+      hp: e.hp, maxHp: e.maxHp,
+      type: e.type,
+      anim: 0,
+      shootTimer: 0,
+      aggro: false,
+      speed: e.type === 'melee' ? 2.5 : e.type === 'elite' ? 2 : 1.5,
+      damage: e.type === 'elite' ? 20 : e.type === 'melee' ? 15 : 10,
+      facing: -1,
+    });
+  });
+  player.x = 200;
+  player.y = 400;
+  state.hp = state.maxHp;
+  if (n === 1) { state.ammo = 30; state.kills = 0; state.score = 0; }
+  updateHUD();
+  // Вступительный диалог для главы 1
+  if (n === 1) {
+    setTimeout(() => {
+      queueDialog('СИСТЕМА', '🏠 Глава I: Квартира Грозиных. Поговори с братом (клавиша E).');
+    }, 500);
+  } else if (n === 2) {
+    setTimeout(() => {
+      queueDialog('СИСТЕМА', '🌆 Глава II: Улицы Москвы. Фанаты Falcons повсюду. Стреляй и выживай!');
+    }, 500);
+  } else if (n === 3) {
+    setTimeout(() => {
+      queueDialog('СИСТЕМА', '🏟️ Глава III: Арена Falcons. Найди m0NESY (клавиша E)!');
+    }, 500);
+  } else if (n === 4) {
+    setTimeout(() => {
+      queueDialog('СИСТЕМА', '👹 Глава IV: Логово DONK. ФИНАЛЬНАЯ БИТВА! Удачи, воин Spirit!');
+      playBossMusic();
+    }, 500);
+  }
+}
+function nextChapter() {
+  if (state.chapter < 4) {
+    state.levelComplete = false;
+    showChapter(state.chapter + 1);
+  } else {
+    showEnding();
+  }
+}
+function showEnding() {
+  state.scene = 'ending';
+  const c = document.createElement('div');
+  c.style.cssText = 'position:fixed;inset:0;background:#000;color:#ffcc00;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;text-align:center;padding:20px;';
+  c.innerHTML = `
+    <h1 style="font-size:64px; text-shadow:0 0 30px #ff6600;">🏆 ПОБЕДА! 🏆</h1>
+    <h2 style="font-size:32px; margin:20px 0; color:#fff;">DONK повержен. m0NESY спасён.</h2>
+    <p style="font-size:20px; max-width:700px; line-height:1.6; color:#ccc;">
+      Дмитрий и Алексей Грозины прошли через все испытания. Они сразились с армией фанатов Falcons,
+      освободили своего кумира m0NESY и доказали всему миру: <b style="color:#ffcc00;">Team Spirit — лучшая команда в истории!</b>
+    </p>
+    <p style="font-size:24px; margin:30px 0; color:#fff;">⭐ ИТОГО: ${state.score} очков</p>
+    <p style="font-size:18px; color:#aaa;">💀 Убийств: ${state.kills} | 🔍 Секретов: ${state.secretsFound}</p>
+    <p style="font-size:20px; margin-top:30px; color:#ffcc00;">Spirit > Falcons. Навсегда.</p>
+    <button class="btn" style="margin-top:30px;" onclick="location.reload()">ИГРАТЬ СНОВА</button>
+  `;
+  document.body.appendChild(c);
+  playMenuMusic();
+}
+
+// ---------- SHOOTING ----------
+function shoot() {
+  if (state.paused || state.currentDialog || state.gameOver || state.levelComplete) return;
+  if (state.ammo <= 0) { playTone(100, 0.1, 'square', 0.1); return; }
+  const now = Date.now();
+  if (now - state.lastShot < 150) return;
+  state.lastShot = now;
+  state.ammo--;
+  playShoot();
+  const worldMx = state.mouse.x + state.camera.x;
+  const worldMy = state.mouse.y + state.camera.y;
+  const px = player.x + player.w/2;
+  const py = player.y + player.h/2 - 10;
+  const ang = Math.atan2(worldMy - py, worldMx - px);
+  const speed = 15;
+  // AWP стреляет сильнее
+  const hasAwp = state.inventory.includes('awp');
+  state.bullets.push({
+    x: px, y: py,
+    vx: Math.cos(ang) * speed,
+    vy: Math.sin(ang) * speed,
+    damage: hasAwp ? 80 : 25,
+    life: 60,
+    fromPlayer: true,
+    color: hasAwp ? '#00ffff' : '#ffff00',
+  });
+  // Эффект дула
+  for (let i = 0; i < 5; i++) {
+    state.particles.push({
+      x: px + Math.cos(ang)*25,
+      y: py + Math.sin(ang)*25,
+      vx: Math.cos(ang + (Math.random()-0.5))*3,
+      vy: Math.sin(ang + (Math.random()-0.5))*3,
+      life: 10,
+      color: '#ffaa00',
+      size: 3,
+    });
+  }
+  if (state.ammo <= 0) {
+    queueDialog('СИСТЕМА', '🔫 Патроны кончились! Нажми R для перезарядки.');
+  }
+  updateHUD();
+}
+function reload() {
+  if (state.ammo < 30) {
+    state.ammo = 30;
+    playTone(400, 0.2, 'square', 0.15);
+    updateHUD();
+  }
+}
+function interact() {
+  // Проверка NPC
+  for (const npc of state.npcs) {
+    const d = Math.hypot(player.x - npc.x, player.y - npc.y);
+    if (d < 80 && !npc.talked) {
+      npc.talked = true;
+      npc.dialog.forEach((dlg, i) => {
+        setTimeout(() => queueDialog(dlg.speaker, dlg.text), i * 100);
+      });
+      // После диалога с m0NESY — получаем AWP
+      if (npc.id === 'monesy' && !state.inventory.includes('awp')) {
+        setTimeout(() => {
+          state.inventory.push('awp');
+          document.getElementById('slot1').textContent = '🎯';
+          flash('#00ffff');
+          playPickup();
+        }, npc.dialog.length * 100 + 500);
+      }
+      return;
+    }
+  }
+  // Проверка дверей
+  for (const door of state.doors) {
+    if (player.x + player.w > door.x && player.x < door.x + door.w &&
+        player.y + player.h > door.y && player.y < door.y + door.h) {
+      fadeToBlack(() => {
+        loadLevel(door.to);
+        player.x = door.spawnX;
+        player.y = door.spawnY;
+      });
+      return;
+    }
+  }
+}
+function fadeToBlack(cb) {
+  state.fade = 1;
+  state.fadeColor = '#000';
+  setTimeout(() => {
+    cb();
+    state.fade = -1;
+  }, 500);
+}
+
+// ---------- UPDATE ----------
+function update() {
+  state.time++;
+  if (state.screamCooldown > 0) state.screamCooldown--;
+  if (state.flash > 0) state.flash -= 0.05;
+  if (state.shake > 0) state.shake *= 0.9;
+  if (state.fade !== 0) {
+    state.fade += state.fade > 0 ? 0.05 : -0.05;
+    if (state.fade >= 1) state.fade = 1;
+    if (state.fade <= 0) state.fade = 0;
+  }
+  if (state.paused || state.currentDialog || state.gameOver || state.levelComplete) return;
+  if (state.scene !== 'gameplay') return;
+
+  // Игрок
+  let dx = 0, dy = 0;
+  if (state.keys['w'] || state.keys['ц'] || state.keys['arrowup']) dy -= 1;
+  if (state.keys['s'] || state.keys['ы'] || state.keys['arrowdown']) dy += 1;
+  if (state.keys['a'] || state.keys['ф'] || state.keys['arrowleft']) dx -= 1;
+  if (state.keys['d'] || state.keys['в'] || state.keys['arrowright']) dx += 1;
+  if (dx || dy) {
+    const len = Math.hypot(dx, dy);
+    dx /= len; dy /= len;
+    player.x += dx * player.speed;
+    player.y += dy * player.speed;
+    player.anim++;
+  }
+  if (dx !== 0) player.facing = dx > 0 ? 1 : -1;
+  // Границы уровня
+  const lvl = levels[state.chapter];
+  player.x = Math.max(0, Math.min(lvl.width - player.w, player.x));
+  player.y = Math.max(100, Math.min(H - player.h - 20, player.y));
+  if (player.invuln > 0) player.invuln--;
+
+  // Авто-стрельба при зажатии
+  if (state.mouse.down && Date.now() - state.lastShot > 150) shoot();
+
+  // Камера
+  state.camera.x = player.x - W/2 + player.w/2;
+  state.camera.y = 0;
+  state.camera.x = Math.max(0, Math.min(lvl.width - W, state.camera.x));
+
+  // Пули
+  for (let i = state.bullets.length - 1; i >= 0; i--) {
+    const b = state.bullets[i];
+    b.x += b.vx;
+    b.y += b.vy;
+    b.life--;
+    if (b.life <= 0) { state.bullets.splice(i, 1); continue; }
+    if (b.fromPlayer) {
+      // По врагам
+      for (let j = state.entities.length - 1; j >= 0; j--) {
+        const e = state.entities[j];
+        if (b.x > e.x - e.w/2 && b.x < e.x + e.w/2 && b.y > e.y - e.h/2 && b.y < e.y + e.h/2) {
+          e.hp -= b.damage;
+          playHit();
+          // Частицы крови
+          for (let k = 0; k < 8; k++) {
+            state.particles.push({
+              x: b.x, y: b.y,
+              vx: (Math.random()-0.5)*5,
+              vy: (Math.random()-0.5)*5,
+              life: 20,
+              color: '#ff0000',
+              size: 2 + Math.random()*2,
+            });
+          }
+          state.bullets.splice(i, 1);
+          if (e.hp <= 0) {
+            state.entities.splice(j, 1);
+            state.kills++;
+            state.score += e.type === 'elite' ? 200 : 100;
+            playDeath();
+            updateHUD();
+          }
+          break;
+        }
+      }
+      // По боссу
+      if (state.boss && b.x > state.boss.x - 50 && b.x < state.boss.x + 50 && b.y > state.boss.y - 80 && b.y < state.boss.y + 40) {
+        state.boss.hp -= b.damage;
+        playHit();
+        shake(3);
+        for (let k = 0; k < 10; k++) {
+          state.particles.push({
+            x: b.x, y: b.y,
+            vx: (Math.random()-0.5)*6,
+            vy: (Math.random()-0.5)*6,
+            life: 25,
+            color: '#ff00ff',
+            size: 3,
+          });
+        }
+        state.bullets.splice(i, 1);
+        if (state.boss.hp <= 0) {
+          bossDefeated();
+        }
+        continue;
+      }
+    } else {
+      // По игроку
+      if (player.invuln === 0 && b.x > player.x && b.x < player.x + player.w && b.y > player.y && b.y < player.y + player.h) {
+        damagePlayer(b.damage);
+        state.bullets.splice(i, 1);
+      }
+    }
+  }
+
+  // Частицы
+  for (let i = state.particles.length - 1; i >= 0; i--) {
+    const p = state.particles[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.2;
+    p.life--;
+    if (p.life <= 0) state.particles.splice(i, 1);
+  }
+
+  // Враги
+  for (const e of state.entities) {
+    e.anim++;
+    const d = Math.hypot(player.x - e.x, player.y - e.y);
+    if (d < 500) e.aggro = true;
+    if (e.aggro) {
+      const ang = Math.atan2(player.y - e.y, player.x - e.x);
+      e.facing = Math.cos(ang) > 0 ? 1 : -1;
+      if (e.type === 'melee' || e.type === 'elite') {
+        if (d > 50) {
+          e.x += Math.cos(ang) * e.speed;
+          e.y += Math.sin(ang) * e.speed;
+        } else {
+          // Атака в ближнем бою
+          if (e.anim % 60 === 0 && player.invuln === 0) {
+            damagePlayer(e.damage);
+          }
+        }
+      } else {
+        // Стрелок — держит дистанцию
+        if (d > 300) {
+          e.x += Math.cos(ang) * e.speed;
+          e.y += Math.sin(ang) * e.speed;
+        } else if (d < 200) {
+          e.x -= Math.cos(ang) * e.speed;
+          e.y -= Math.sin(ang) * e.speed;
+        }
+        e.shootTimer--;
+        if (e.shootTimer <= 0) {
+          e.shootTimer = e.type === 'elite' ? 40 : 80;
+          const speed = 8;
+          state.bullets.push({
+            x: e.x, y: e.y - 10,
+            vx: Math.cos(ang) * speed,
+            vy: Math.sin(ang) * speed,
+            damage: e.damage,
+            life: 60,
+            fromPlayer: false,
+            color: '#ff6600',
+          });
+        }
+      }
+    }
+  }
+
+  // Предметы
+  for (const it of state.items) {
+    if (it.collected) continue;
+    const d = Math.hypot(player.x + player.w/2 - it.x, player.y + player.h/2 - it.y);
+    if (d < 40) {
+      it.collected = true;
+      playPickup();
+      if (it.type === 'ammo') { state.ammo = Math.min(99, state.ammo + 15); }
+      else if (it.type === 'health') { state.hp = Math.min(state.maxHp, state.hp + 30); }
+      else if (it.type === 'spirit') { state.spiritPoints++; state.score += 200; flash('#ffcc00'); }
+      updateHUD();
+    }
+  }
+
+  // Скримеры
+  if (state.screams) {
+    for (const s of state.screams) {
+      if (s.triggered) continue;
+      const d = Math.hypot(player.x - s.x, player.y - s.y);
+      if (d < 100) {
+        s.triggered = true;
+        triggerScream(s.type);
+      }
+    }
+  }
+
+  // Босс
+  if (state.boss && state.bossActive) {
+    updateBoss();
+  }
+
+  // Проверка завершения уровня (все враги убиты + нет босса)
+  if (!state.levelComplete && state.entities.length === 0 && !state.bossActive) {
+    if (state.chapter < 4) {
+      const door = state.doors[0];
+      if (door) {
+        state.levelComplete = true;
+        showDialog('СИСТЕМА', '✅ Уровень пройден! ' + (lvl.exitMsg || 'Иди к выходу.') + ' [ПРОБЕЛ] — продолжить', 0);
+      }
+    }
+  }
+}
+
+function updateBoss() {
+  const b = state.boss;
+  b.attackTimer++;
+  const ang = Math.atan2(player.y - b.y, player.x - b.x);
+  b.facing = Math.cos(ang) > 0 ? 1 : -1;
+
+  // Фазы босса
+  const hpPct = b.hp / b.maxHp;
+  if (hpPct < 0.3) b.phase = 3;
+  else if (hpPct < 0.6) b.phase = 2;
+  else b.phase = 1;
+
+  // Паттерны атак
+  if (b.charging) {
+    b.x += b.chargeVx;
+    b.chargeTimer--;
+    if (b.chargeTimer <= 0) b.charging = false;
+    // Столкновение с игроком
+    if (Math.abs(player.x - b.x) < 60 && Math.abs(player.y - b.y) < 60 && player.invuln === 0) {
+      damagePlayer(30);
+      shake(15);
+    }
+  } else {
+    // Движение к игроку
+    if (Math.hypot(player.x - b.x, player.y - b.y) > 200) {
+      b.x += Math.cos(ang) * 1.5;
+      b.y += Math.sin(ang) * 1.5;
+    }
+    // Атака
+    if (b.attackTimer > (b.phase === 3 ? 30 : b.phase === 2 ? 50 : 70)) {
+      b.attackTimer = 0;
+      const attack = Math.random();
+      if (attack < 0.4) {
+        // Рывок
+        b.charging = true;
+        b.chargeVx = Math.cos(ang) * 12;
+        b.chargeTimer = 30;
+        shake(5);
+      } else if (attack < 0.8) {
+        // Веер пуль
+        for (let i = -3; i <= 3; i++) {
+          const a = ang + i * 0.2;
+          state.bullets.push({
+            x: b.x, y: b.y - 20,
+            vx: Math.cos(a) * 7,
+            vy: Math.sin(a) * 7,
+            damage: 15,
+            life: 80,
+            fromPlayer: false,
+            color: '#ff00ff',
+          });
+        }
+      } else {
+        // Скример-атака (в фазе 3)
+        if (b.phase === 3 && Math.random() < 0.3) {
+          triggerScream('DONK_SEES_YOU');
+        }
+        // Одиночный сильный выстрел
+        state.bullets.push({
+          x: b.x, y: b.y - 20,
+          vx: Math.cos(ang) * 10,
+          vy: Math.sin(ang) * 10,
+          damage: 25,
+          life: 80,
+          fromPlayer: false,
+          color: '#ff0000',
+        });
+      }
+    }
+  }
+  // Границы арены
+  b.x = Math.max(100, Math.min(levels[4].width - 100, b.x));
+  b.y = Math.max(200, Math.min(H - 100, b.y));
+  // Обновление HUD босса
+  document.getElementById('bossHud').style.display = 'block';
+  document.getElementById('bossName').textContent = 'DONK (фаза ' + b.phase + ')';
+  document.getElementById('bossBar').style.width = (b.hp/b.maxHp*100) + '%';
+}
+
+function bossDefeated() {
+  state.bossActive = false;
+  state.boss = null;
+  state.levelComplete = true;
+  state.score += 2000;
+  flash('#ffcc00');
+  shake(20);
+  document.getElementById('bossHud').style.display = 'none';
+  // Большой взрыв
+  for (let i = 0; i < 100; i++) {
+    state.particles.push({
+      x: player.x + 500, y: 400,
+      vx: (Math.random()-0.5)*15,
+      vy: (Math.random()-0.5)*15,
+      life: 60,
+      color: ['#ff0000','#ff6600','#ffcc00','#ff00ff'][Math.floor(Math.random()*4)],
+      size: 3 + Math.random()*4,
+    });
+  }
+  showDialog('СИСТЕМА', '🏆 DONK ПОВЕРЖЕН! m0NESY СВОБОДЕН! Team Spirit — ЧЕМПИОНЫ! [ПРОБЕЛ]', 0);
+  updateHUD();
+}
+
+function damagePlayer(amount) {
+  if (player.invuln > 0) return;
+  state.hp -= amount;
+  player.invuln = 30;
+  flash('#ff0000');
+  shake(8);
+  playHit();
+  if (state.hp <= 0) {
+    state.hp = 0;
+    gameOver();
+  }
+  updateHUD();
+}
+
+function gameOver() {
+  state.gameOver = true;
+  playDeath();
+  setTimeout(() => {
+    triggerScream('default');
+    setTimeout(() => {
+      const c = document.createElement('div');
+      c.style.cssText = 'position:fixed;inset:0;background:#000;color:#ff0000;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;text-align:center;';
+      c.innerHTML = `
+        <h1 style="font-size:96px; text-shadow:0 0 30px #ff0000;">💀 GAME OVER 💀</h1>
+        <p style="font-size:24px; margin:20px; color:#fff;">Ты пал в бою за Team Spirit...</p>
+        <p style="font-size:18px; color:#aaa;">Очки: ${state.score} | Убийств: ${state.kills}</p>
+        <button class="btn" style="margin-top:30px;" onclick="location.reload()">ПОПРОБОВАТЬ СНОВА</button>
+      `;
+      document.body.appendChild(c);
+    }, 1500);
+  }, 300);
+}
+
+function togglePause() {
+  state.paused = !state.paused;
+  if (state.paused) {
+    showDialog('ПАУЗА', 'Игра на паузе. ESC — продолжить. Spirit > Falcons!', 0);
+  } else {
+    closeDialog();
+  }
+}
+
+// ---------- RENDER ----------
+function render() {
+  const lvl = levels[state.chapter];
+  if (!lvl) return;
+
+  ctx.save();
+  // Тряска камеры
+  if (state.shake > 0.5) {
+    ctx.translate((Math.random()-0.5)*state.shake, (Math.random()-0.5)*state.shake);
+  }
+  ctx.translate(-state.camera.x, -state.camera.y);
+
+  // Фон
+  ctx.fillStyle = lvl.bgColor;
+  ctx.fillRect(state.camera.x, 0, W, H);
+
+  // Стены (задний план)
+  ctx.fillStyle = lvl.wallColor;
+  ctx.fillRect(0, 0, lvl.width, 150);
+  // Окна/детали
+  for (let i = 0; i < lvl.width; i += 200) {
+    if (state.chapter === 1) {
+      // Квартира — картины, окна
+      ctx.fillStyle = '#3498db';
+      ctx.fillRect(i+50, 40, 80, 60);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(i+50, 40, 80, 60);
+      ctx.beginPath(); ctx.moveTo(i+90, 40); ctx.lineTo(i+90, 100); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(i+50, 70); ctx.lineTo(i+130, 70); ctx.stroke();
+    } else if (state.chapter === 2) {
+      // Город — здания
+      ctx.fillStyle = '#2c3e50';
+      ctx.fillRect(i+20, 50, 160, 100);
+      ctx.fillStyle = '#f1c40f';
+      for (let wy = 0; wy < 3; wy++) {
+        for (let wx = 0; wx < 4; wx++) {
+          if (Math.random() > 0.3) {
+            ctx.fillRect(i+30+wx*35, 60+wy*30, 15, 20);
+          }
+        }
+      }
+    } else if (state.chapter === 3) {
+      // Арена Falcons — оранжевые флаги
+      ctx.fillStyle = '#d35400';
+      ctx.fillRect(i+90, 20, 4, 120);
+      ctx.fillStyle = '#e67e22';
+      ctx.beginPath();
+      ctx.moveTo(i+94, 20);
+      ctx.lineTo(i+140, 35);
+      ctx.lineTo(i+94, 50);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 10px Arial';
+      ctx.fillText('FALCONS', i+100, 40);
+    } else if (state.chapter === 4) {
+      // Логово DONK — черепа и кровь
+      ctx.fillStyle = '#4a0000';
+      ctx.fillRect(i, 0, 200, 150);
+      ctx.fillStyle = '#8b0000';
+      ctx.beginPath();
+      ctx.arc(i+100, 75, 30, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.beginPath(); ctx.arc(i+90, 70, 5, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(i+110, 70, 5, 0, Math.PI*2); ctx.fill();
+      ctx.fillRect(i+95, 85, 10, 5);
+    }
+  }
+
+  // Пол
+  ctx.fillStyle = lvl.floorColor;
+  ctx.fillRect(0, 550, lvl.width, 170);
+  // Плитка
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < lvl.width; i += 80) {
+    ctx.beginPath();
+    ctx.moveTo(i, 550);
+    ctx.lineTo(i, 720);
+    ctx.stroke();
+  }
+  for (let j = 550; j < 720; j += 40) {
+    ctx.beginPath();
+    ctx.moveTo(0, j);
+    ctx.lineTo(lvl.width, j);
+    ctx.stroke();
+  }
+
+  // Двери
+  for (const door of state.doors) {
+    ctx.fillStyle = '#8b4513';
+    ctx.fillRect(door.x, door.y, door.w, door.h);
+    ctx.fillStyle = '#654321';
+    ctx.fillRect(door.x+5, door.y+5, door.w-10, door.h-10);
+    ctx.fillStyle = '#ffcc00';
+    ctx.beginPath();
+    ctx.arc(door.x + door.w - 10, door.y + door.h/2, 3, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#ffcc00';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('[E]', door.x + door.w/2, door.y - 5);
+  }
+
+  // Предметы
+  for (const it of state.items) {
+    if (it.collected) continue;
+    const bob = Math.sin(state.time*0.1 + it.x) * 5;
+    ctx.font = '30px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(it.icon, it.x, it.y + bob);
+    // Свечение
+    ctx.strokeStyle = it.type === 'spirit' ? 'rgba(255,204,0,0.5)' : 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(it.x, it.y + bob - 10, 20 + Math.sin(state.time*0.1)*3, 0, Math.PI*2);
+    ctx.stroke();
+  }
+
+  // NPC
+  for (const npc of state.npcs) {
+    drawNPC(ctx, npc);
+    if (!npc.talked) {
+      ctx.fillStyle = '#ffcc00';
+      ctx.font = 'bold 20px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('!', npc.x, npc.y - 80 + Math.sin(state.time*0.1)*3);
+      const d = Math.hypot(player.x - npc.x, player.y - npc.y);
+      if (d < 100) {
+        ctx.fillStyle = '#fff';
+        ctx.font = '12px Arial';
+        ctx.fillText('[E] Говорить', npc.x, npc.y - 95);
+      }
+    }
+  }
+
+  // Враги
+  for (const e of state.entities) {
+    drawEnemy(ctx, e);
+  }
+
+  // Босс
+  if (state.boss) {
+    drawBoss(ctx, state.boss);
+  }
+
+  // Игрок
+  if (player.invuln === 0 || Math.floor(state.time/4) % 2 === 0) {
+    drawBlondCharacter(ctx, player.x + player.w/2, player.y + player.h/2, player.facing, player.anim, true, state.character);
+  }
+
+  // Пули
+  for (const b of state.bullets) {
+    ctx.fillStyle = b.color;
+    ctx.shadowColor = b.color;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, 4, 0, Math.PI*2);
+    ctx.fill();
+    // След
+    ctx.strokeStyle = b.color;
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(b.x - b.vx*2, b.y - b.vy*2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+  }
+
+  // Частицы
+  for (const p of state.particles) {
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = p.life / 30;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.restore();
+
+  // Прицел
+  if (state.scene === 'gameplay' && !state.currentDialog) {
+    ctx.strokeStyle = state.inventory.includes('awp') ? '#00ffff' : '#ff0000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(state.mouse.x, state.mouse.y, 15, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(state.mouse.x - 20, state.mouse.y);
+    ctx.lineTo(state.mouse.x - 8, state.mouse.y);
+    ctx.moveTo(state.mouse.x + 8, state.mouse.y);
+    ctx.lineTo(state.mouse.x + 20, state.mouse.y);
+    ctx.moveTo(state.mouse.x, state.mouse.y - 20);
+    ctx.lineTo(state.mouse.x, state.mouse.y - 8);
+    ctx.moveTo(state.mouse.x, state.mouse.y + 8);
+    ctx.lineTo(state.mouse.x, state.mouse.y + 20);
+    ctx.stroke();
+    ctx.fillStyle = state.inventory.includes('awp') ? '#00ffff' : '#ff0000';
+    ctx.beginPath();
+    ctx.arc(state.mouse.x, state.mouse.y, 2, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // Вспышка
+  if (state.flash > 0) {
+    ctx.fillStyle = state.flashColor || '#fff';
+    ctx.globalAlpha = state.flash;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+  }
+
+  // Fade
+  if (state.fade > 0) {
+    ctx.fillStyle = state.fadeColor;
+    ctx.globalAlpha = state.fade;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+  }
+
+  // Подсказка выхода
+  if (state.levelComplete && state.chapter < 4) {
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(W/2 - 200, 50, 400, 60);
+    ctx.strokeStyle = '#ffcc00';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(W/2 - 200, 50, 400, 60);
+    ctx.fillStyle = '#ffcc00';
+    ctx.font = 'bold 20px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('✅ УРОВЕНЬ ПРОЙДЕН! [ПРОБЕЛ]', W/2, 85);
+  }
+
+  // Индикатор секретного поля
+  if (state.easterEggSpirit) {
+    ctx.fillStyle = '#ffcc00';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'right';
+    ctx.fillText('🏆 SPIRIT FAN', W - 20, H - 80);
+  }
+}
+
+// ---------- MAIN LOOP ----------
+function loop() {
+  update();
+  render();
+  requestAnimationFrame(loop);
+}
+loop();
+
+// ---------- RESIZE ----------
+function resize() {
+  const ratio = W / H;
+  const ww = window.innerWidth;
+  const wh = window.innerHeight;
+  let cw = ww, ch = ww / ratio;
+  if (ch > wh) { ch = wh; cw = wh * ratio; }
+  canvas.style.width = cw + 'px';
+  canvas.style.height = ch + 'px';
+  canvas.style.marginTop = ((wh - ch) / 2) + 'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ---------- INIT MESSAGE ----------
+console.log('%c ГРОЗИН: ПУТЬ К ЧЕМПИОНАТУ ', 'background:#ffcc00;color:#000;font-size:20px;font-weight:bold;');
+console.log('%c Spirit > Falcons ', 'background:#000;color:#ffcc00;font-size:14px;');
+console.log('Секретные коды: spirit, m0nesy, donk, falcons');
+
+</script>
+</body>
+</html>
